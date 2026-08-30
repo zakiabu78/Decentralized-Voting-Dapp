@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+/* ============================================
+   VARIABLES GLOBALES
+   ============================================ */
+:root {
+  --primary-blue: #2563eb;
+  --primary-indigo: #4f46e5;
+  --deep-slate: #0f172a;
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(226, 232, 240, 0.8);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================
+   BASE
+   ============================================ */
+body {
+  background-color: #f8fafc;
+  color: #0f172a;
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #020617;
+    color: #f8fafc;
+  }
+}
+
+/* ============================================
+   GRILLE TECHNIQUE (fond de page)
+   ============================================ */
+.tech-grid {
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tech-grid {
+    background-image:
+      linear-gradient(rgba(96, 165, 250, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(96, 165, 250, 0.05) 1px, transparent 1px);
+  }
+}
+
+/* ============================================
+   EFFET VERRE — classe utilisée dans StepCard et Page
+   ============================================ */
+.buras-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+@media (prefers-color-scheme: dark) {
+  .buras-glass {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(30, 41, 59, 0.8);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ============================================
+   ZONE DE CONTENU PRINCIPALE (SubPage dashboard)
+   ============================================ */
+.buras-content-area {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .buras-content-area {
+    background: #111827;
+    border-color: #1f2937;
+  }
+}
+
+/* ============================================
+   CARTE GÉNÉRIQUE
+   ============================================ */
+.buras-card {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .buras-card {
+    background-color: #111827;
+    border-color: #1f2937;
+  }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes entry {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-entry {
+  animation: entry 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.page-fade-in {
+  animation: fade-in 0.4s ease both;
+}
