@@ -73,6 +73,7 @@ contract VotingSystem is AccessControl, ReentrancyGuard, Pausable {
     event VoterReactivated(address indexed voter);
     event CandidateDeactivated(address indexed candidate);
     event CandidateReactivated(address indexed candidate);
+    event VotingPeriodUpdated(uint256 start, uint256 end); // [FIX-3] traceability for admin changes
 
     // --- INTERNAL HELPER ---
     function _getCandidateIdByAddress(address _addr) private view returns (uint256) {
@@ -131,6 +132,7 @@ contract VotingSystem is AccessControl, ReentrancyGuard, Pausable {
         string memory _image,
         string memory _ipfs
     ) public onlyRole(ORGANIZER_ROLE) {
+        require(_address != address(0), "Zero address not allowed."); // [FIX-4]
         require(candidateId < MAX_CANDIDATES, "Candidate limit reached.");
         require(!isCandidate[_address], "Address already registered as candidate.");
         require(
@@ -156,6 +158,7 @@ contract VotingSystem is AccessControl, ReentrancyGuard, Pausable {
         uint256 _age,
         string memory _ipfs
     ) public onlyRole(ORGANIZER_ROLE) {
+        require(_address != address(0), "Zero address not allowed."); // [FIX-4]
         require(!voters[_address].isVoter, "Voter already registered.");
 
         uint256 cId = _getCandidateIdByAddress(_address);
@@ -216,11 +219,16 @@ contract VotingSystem is AccessControl, ReentrancyGuard, Pausable {
     }
 
     // --- VOTING PERIOD ---
+    // [FIX-1 / HIGH] Previously callable at any time, including mid-election, letting
+    // ORGANIZER_ROLE shorten, extend, or reopen an active/finished voting window at will
+    // (election-integrity / centralization risk). Now locked once voting has started.
     function setVotingPeriod(uint256 _start, uint256 _end) public onlyRole(ORGANIZER_ROLE) {
-        require(_start >= block.timestamp - 60, "Start cannot be in the past.");
+        require(block.timestamp < votingStart, "Cannot modify an active or concluded voting period.");
+        require(_start + 60 >= block.timestamp, "Start cannot be in the past."); // [FIX-2] no underflow
         require(_start < _end, "Start must be before end.");
         votingStart = _start;
         votingEnd = _end;
+        emit VotingPeriodUpdated(_start, _end);
     }
 
     // --- VOTING FUNCTION ---
@@ -270,7 +278,10 @@ contract VotingSystem is AccessControl, ReentrancyGuard, Pausable {
         bool isActive
     ) {
         Voter memory v = voters[_addr];
-        return (v.voter_id, v.voter_name, v.voter_address, v.voter_image, v.voter_age, v.hasVoted, v.voter_ipfs, v.isActive);
+        // [FIX-5 / MEDIUM] v.hasVoted is never cleared on Round 2 reset, so it went stale
+        // and misreported "already voted" status in the new round. Derive it live instead.
+        bool hasVotedThisRound = v.lastRoundVoted == currentRound;
+        return (v.voter_id, v.voter_name, v.voter_address, v.voter_image, v.voter_age, hasVotedThisRound, v.voter_ipfs, v.isActive);
     }
 
     function getWinner() public view returns (
