@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { ethers } from 'ethers';
 import { votingAddress, votingAddressABI } from './Constants';
 
-const PINATA_JWT = process.env.NEXT_PUBLIC_PINATA_JWT;
-
 // ============================================
 // Helpers
 // ============================================
@@ -133,7 +131,8 @@ export const VotingProvider = ({ children }: { children: React.ReactNode }) => {
       setIsPaused(isPaused);
 
       if (currentAccount) {
-        setIsOrganizer(currentAccount.toLowerCase() === organizer.toLowerCase());
+        const organizerRole = await contract.ORGANIZER_ROLE();
+        setIsOrganizer(await contract.hasRole(organizerRole, currentAccount));
 
         const [id, , , , , , , isActive] = await contract.getVoterData(currentAccount);
         setIsRegisteredVoter(Number(id) > 0);
@@ -187,13 +186,13 @@ export const VotingProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      const res = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+      const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${PINATA_JWT}` },
         body: formData,
       });
+      if (!res.ok) throw new Error('Upload failed');
       const data = await res.json();
-      return `https://gateway.pinata.cloud/ipfs/${data.IpfsHash}`;
+      return `https://gateway.pinata.cloud/ipfs/${data.ipfsHash}`;
     } catch (err) {
       setError('Error uploading file to IPFS.');
       return undefined;
