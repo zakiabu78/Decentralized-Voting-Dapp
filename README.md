@@ -1,890 +1,203 @@
 # 🗳️ Decentralized Voting DApp
 
-A decentralized voting application (DApp) built with **Next.js, Ethereum, Solidity, and IPFS**.
+A decentralized voting application built with **Next.js, Ethereum, Solidity, and IPFS**.
 
-The application supports two modes:
+Two modes are supported:
 
-* **Local mode** — runs on a local Hardhat blockchain. Fast, free, and ideal for development and testing.
-* **Sepolia mode** — runs on Ethereum's public Sepolia testnet. Transactions are publicly verifiable and shareable through Etherscan.
+* **Local** — runs on a local Hardhat blockchain. Fast, free, ideal for dev/testing.
+* **Sepolia** — runs on Ethereum's public testnet. Transactions are publicly verifiable via Etherscan.
 
-## 🛠️ Technology Stack
+## 🛠️ Stack
 
 | Layer                  | Technology                                          |
-| ---------------------- | --------------------------------------------------- |
-| Frontend               | Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 |
-| Smart Contract         | Solidity 0.8.28 · OpenZeppelin 5                    |
-| Local Blockchain       | Hardhat · Chain ID `31337`                          |
-| Public Blockchain      | Ethereum Sepolia · Chain ID `11155111`              |
-| Blockchain Integration | ethers.js v6                                        |
-| Wallet                 | MetaMask                                            |
-| Decentralized Storage  | IPFS via Pinata                                     |
-| Sepolia RPC            | Alchemy                                             |
+| ----------------------- | --------------------------------------------------- |
+| Frontend                | Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 |
+| Smart Contract          | Solidity 0.8.28 · OpenZeppelin 5                    |
+| Local Blockchain        | Hardhat · Chain ID `31337`                          |
+| Public Blockchain       | Ethereum Sepolia · Chain ID `11155111`              |
+| Blockchain Integration  | ethers.js v6                                        |
+| Wallet                  | MetaMask                                            |
+| Decentralized Storage   | IPFS via Pinata (uploaded through a server route — see below) |
+| Sepolia RPC / Verify    | Alchemy / Etherscan                                 |
 
 ---
 
-# 📋 Prerequisites
+## 📋 Prerequisites
 
-Before running the project, install:
-
-### 1. Node.js
-
-Node.js **20 or higher** is required. The project was tested with Node.js 22.
-
-Check your installation:
-
-```bash
-node -v
-npm -v
-```
-
-You can download Node.js from:
-
-https://nodejs.org
-
-### 2. MetaMask
-
-Install the MetaMask browser extension:
-
-https://metamask.io
-
-### 3. Code Editor
-
-VS Code is recommended, but any code editor can be used.
-
-### 4. Pinata
-
-A free Pinata account is required for IPFS image uploads:
-
-https://www.pinata.cloud
-
-### 5. Sepolia Mode Only
-
-If you want to deploy to Sepolia, you will also need:
-
-* An Alchemy account for the Sepolia RPC
-* A dedicated Sepolia wallet
-* Sepolia test ETH
-* An Etherscan API key if you want to verify the contract
+* **Node.js 20+** (tested on 22) — `node -v`
+* **MetaMask** browser extension — https://metamask.io
+* **Pinata** account for IPFS image uploads — https://www.pinata.cloud
+* **Sepolia mode only:** an Alchemy account, a dedicated Sepolia wallet with test ETH, and (optionally) an Etherscan API key for verification.
 
 ---
 
-# ⚠️ Important Before Running
+## ⚠️ Before You Run Anything
 
-## 1. Compile the Smart Contract First
-
-The frontend uses the generated Hardhat artifact:
-
-```text
-artifacts/contracts/voting_contracts.sol/VotingSystem.json
-```
-
-This file does not exist until the contract has been compiled.
-
-Run:
-
-```bash
-npx hardhat compile
-```
-
-before starting the frontend.
+1. **Compile first** — the frontend imports `artifacts/contracts/voting_contracts.sol/VotingSystem.json`, which only exists after `npx hardhat compile`.
+2. **Contract address** — after every deployment, copy the printed address into `context/Constants.tsx` (`export const votingAddress = "0x...";`).
+3. **Use Webpack, not Turbopack** — `ipfs-http-client` needs Node modules (`fs`, `net`, `tls`) Turbopack doesn't polyfill. Always start the frontend with:
+   ```bash
+   npx next dev --webpack --port 3005
+   ```
+4. **Use `localhost`, not a LAN IP** (`192.168.x.x`) — MetaMask's injected provider only works reliably with `localhost`.
 
 ---
 
-## 2. Contract Address
+## 🔐 Environment Variables
 
-The frontend stores the deployed contract address in:
-
-```text
-context/Constants.tsx
-```
-
-For example:
-
-```ts
-export const votingAddress = "0x...";
-```
-
-This address must correspond to the contract deployment for the network you are currently using.
-
-### Local network
-
-With a fresh Hardhat node, the first deployment normally produces:
-
-```text
-0x5FbDB2315678afecb367f032d93F642f64180aa3
-```
-
-### Sepolia
-
-The deployment script generates a different address. Copy the address printed by:
-
-```bash
-npx hardhat run scripts/deploy.js --network sepolia
-```
-
-and update `votingAddress`.
-
-> **Important:** Every time you deploy a new contract, update the address in `Constants.tsx`.
-
----
-
-## 3. Use Webpack for Next.js
-
-This project uses `ipfs-http-client`, which requires Node.js modules such as `fs`, `net`, and `tls`.
-
-Next.js 16 uses Turbopack by default, so start the development server with Webpack:
-
-```bash
-npx next dev --webpack --port 3005
-```
-
----
-
-## 4. Use `localhost`
-
-When testing locally, open:
-
-```text
-http://localhost:3005
-```
-
-Do not use a LAN IP such as:
-
-```text
-http://192.168.x.x:3005
-```
-
-MetaMask's injected provider works reliably with `localhost`.
-
----
-
-# 🔐 Environment Variables
-
-Create a file named:
-
-```text
-.env.local
-```
-
-in the project root.
-
-**Never commit `.env.local` to GitHub.**
-
-The repository includes `.env.example` as a template.
-
-## Local Mode
-
-For local development, the main variable required by the frontend is:
+Create `.env.local` at the project root (never commit it — `.env.example` is the template).
 
 ```env
-NEXT_PUBLIC_PINATA_JWT=<your_pinata_jwt>
-```
-
-## Sepolia Mode
-
-For Sepolia deployment, configure:
-
-```env
-# IPFS image storage
-NEXT_PUBLIC_PINATA_JWT=<your_pinata_jwt>
-
-# Sepolia RPC used by Hardhat
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-
-# Dedicated Sepolia deployment wallet
-DEPLOYER_PRIVATE_KEY=0x<your_sepolia_private_key>
-
-# Etherscan verification
+# --- Server-side only (never exposed to the browser) ---
+PINATA_JWT=<your_pinata_jwt>
 ETHERSCAN_API_KEY=<your_etherscan_api_key>
+DEPLOYER_PRIVATE_KEY=0x<sepolia_only_dedicated_wallet_key>
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<ALCHEMY_KEY>
 
-# Sepolia RPC used by the browser
-NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-
-# WebSocket RPC used for the live feed
-NEXT_PUBLIC_RPC_WSS_URL=wss://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
+# --- Exposed to the browser (Sepolia mode only) ---
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<ALCHEMY_KEY>
+NEXT_PUBLIC_RPC_WSS_URL=wss://eth-sepolia.g.alchemy.com/v2/<ALCHEMY_KEY>
 ```
 
-### Security
+> **`PINATA_JWT` and `ETHERSCAN_API_KEY` must NOT have the `NEXT_PUBLIC_` prefix.** They're read server-side by `app/api/upload/route.ts` and `app/api/logs/route.ts`, which proxy the Pinata and Etherscan calls so the credentials never reach the browser bundle. If you're deploying (Vercel/Netlify/etc.), set both in your host's environment-variable settings too — the app returns a 500 on upload/results otherwise.
 
-* Never commit `.env.local`.
-* Never publish a private key.
-* Use a dedicated wallet for Sepolia development.
-* Never use a wallet containing real funds as your deployment wallet.
-* If a private key, API key, JWT, or other credential is exposed, revoke or regenerate it immediately.
-* Variables beginning with `NEXT_PUBLIC_` are intentionally exposed to the browser. **Never put private keys or other sensitive secrets in `NEXT_PUBLIC_` variables.**
+**Security basics:** never commit `.env.local` · never publish a private key · use a dedicated, fund-free wallet for Sepolia dev · rotate any credential that leaks · anything actually prefixed `NEXT_PUBLIC_` is genuinely public — never put a secret there.
 
 ---
 
-# 🟢 Mode A — Local Development
+## 🟢 Local Development
 
-The local mode uses a Hardhat blockchain running on your machine.
-
-It is:
-
-* Fast
-* Free
-* Deterministic
-* Suitable for development and testing
-
-You will normally use **three terminals**.
-
----
-
-## Step 1 — Install Dependencies
-
-From the project directory:
+Three terminals:
 
 ```bash
 npm install
-```
 
----
-
-## Step 2 — Compile the Contract
-
-In Terminal 1:
-
-```bash
+# Terminal 1 — compile + run the chain
 npx hardhat compile
-```
+npx hardhat node                     # http://127.0.0.1:8545, chain ID 31337
 
-This generates:
-
-```text
-artifacts/
-```
-
-The generated artifacts contain the contract ABI and bytecode.
-
----
-
-## Step 3 — Start the Hardhat Node
-
-In Terminal 1:
-
-```bash
-npx hardhat node
-```
-
-The node runs at:
-
-```text
-http://127.0.0.1:8545
-```
-
-with:
-
-```text
-Chain ID: 31337
-```
-
-Hardhat provides test accounts funded with fake ETH.
-
-### Default Hardhat Account
-
-Hardhat's first account is commonly:
-
-```text
-Address:
-0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-```
-
-Its default private key is publicly known and intended only for local development.
-
-> ⚠️ **Never use Hardhat's default private key on Sepolia or mainnet.**
-
-Keep this terminal running while using the local blockchain.
-
-Restarting the Hardhat node resets the local blockchain state.
-
----
-
-## Step 4 — Deploy the Contract
-
-In Terminal 2:
-
-```bash
+# Terminal 2 — deploy
 npx hardhat run scripts/deploy.js --network localhost
-```
+# first deploy on a fresh node is normally 0x5FbDB2315678afecb367f032d93F642f64180aa3
+# → paste the printed address into context/Constants.tsx if different
 
-The deployment script prints the deployed contract address.
-
-With a fresh Hardhat node, the first deployment is normally:
-
-```text
-0x5FbDB2315678afecb367f032d93F642f64180aa3
-```
-
-If a different address is printed, update:
-
-```text
-context/Constants.tsx
-```
-
-with the new address.
-
-The deploying account becomes the organizer and receives:
-
-* `DEFAULT_ADMIN_ROLE`
-* `ORGANIZER_ROLE`
-
-The voting period initially lasts **90 minutes** from deployment.
-
----
-
-## Step 5 — Configure the Frontend for Local Mode
-
-In:
-
-```text
-context/Voter.tsx
-```
-
-use the local provider:
-
-```ts
-const provider = new ethers.JsonRpcProvider(
-  "http://127.0.0.1:8545"
-);
-```
-
----
-
-## Step 6 — Start the Frontend
-
-In Terminal 3:
-
-```bash
+# Terminal 3 — frontend
 npx next dev --webpack --port 3005
 ```
 
-Open:
+Open `http://localhost:3005`. In MetaMask, add network **Hardhat Local** (RPC `http://127.0.0.1:8545`, chain ID `31337`, symbol `ETH`), then import Hardhat account #0 (private key printed by `npx hardhat node`) — this account is the organizer (`DEFAULT_ADMIN_ROLE` + `ORGANIZER_ROLE`). Import extra Hardhat accounts to simulate voters. Voting period defaults to **90 minutes** from deployment.
 
-```text
-http://localhost:3005
-```
+Keep the Hardhat node terminal running — restarting it wipes local chain state (and you'll need to reset the MetaMask account nonce).
 
 ---
 
-## Step 7 — Configure MetaMask
+## 🔵 Sepolia Testnet
 
-### Add the Hardhat Network
+No local node needed. Steps:
 
-In MetaMask, add a custom network:
+1. **Dedicated wallet** — create a fresh MetaMask account for dev only, export its key into `.env.local` as `DEPLOYER_PRIVATE_KEY`. Never use a wallet holding real funds.
+2. **Test ETH** — fund it from a faucet (e.g. https://cloud.google.com/application/web3/faucet/ethereum/sepolia).
+3. **Alchemy** — create a Sepolia app at https://www.alchemy.com, fill in the RPC vars above.
+4. **Compile & deploy:**
+   ```bash
+   npx hardhat compile
+   npx hardhat run scripts/deploy.js --network sepolia
+   ```
+5. **Update the frontend** — paste the new address into `context/Constants.tsx`; point the read provider in `context/Voter.tsx` at `process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL`; set the contract's deployment block in `app/results/page.tsx` (avoids scanning the whole chain for events).
+6. **Run:** `npx next dev --webpack --port 3005`, open `http://localhost:3005`, switch MetaMask to **Sepolia** with the deployer account connected.
 
-```text
-Network Name: Hardhat Local
-RPC URL: http://127.0.0.1:8545
-Chain ID: 31337
-Currency Symbol: ETH
-```
+### Optional: verify on Etherscan
 
-### Import the Organizer Account
-
-Import Hardhat account #0 using the private key printed by:
-
+`hardhat.config.ts` already reads `process.env.ETHERSCAN_API_KEY`. Run:
 ```bash
-npx hardhat node
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS>
 ```
-
-You can import additional Hardhat accounts to simulate voters.
-
-Then connect MetaMask to the application.
+(no constructor args needed).
 
 ---
 
-# 🔵 Mode B — Sepolia Testnet
-
-Sepolia is Ethereum's public test network.
-
-It provides:
-
-* Public transactions
-* Real blockchain confirmations
-* Shareable Etherscan links
-* Free test ETH
-
-You **do not** need to run:
-
-```bash
-npx hardhat node
-```
-
----
-
-## Step 1 — Create a Dedicated Sepolia Wallet
-
-Create a new MetaMask account specifically for development.
-
-For example:
-
-```text
-Sepolia Dev
-```
-
-Export its private key and store it **only in `.env.local`**:
-
-```env
-DEPLOYER_PRIVATE_KEY=0x...
-```
-
-> ⚠️ Never use a wallet containing real funds.
-
----
-
-## Step 2 — Get Sepolia Test ETH
-
-You need Sepolia ETH to pay deployment gas.
-
-Use a Sepolia faucet such as the Google Cloud faucet:
-
-https://cloud.google.com/application/web3/faucet/ethereum/sepolia
-
-You can check the wallet balance on:
-
-https://sepolia.etherscan.io
-
----
-
-## Step 3 — Configure Alchemy
-
-Create an Alchemy application for Ethereum Sepolia:
-
-https://www.alchemy.com
-
-Add the RPC URLs to `.env.local`:
-
-```env
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-
-NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-
-NEXT_PUBLIC_RPC_WSS_URL=wss://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-```
-
-The first variable is used by Hardhat.
-
-The `NEXT_PUBLIC_` variables are used by the browser.
-
----
-
-## Step 4 — Compile and Deploy
-
-Compile:
-
-```bash
-npx hardhat compile
-```
-
-Deploy:
-
-```bash
-npx hardhat run scripts/deploy.js --network sepolia
-```
-
-The script prints:
-
-* Deployer address
-* Wallet balance
-* Contract address
-* Etherscan URL
-
-Copy the contract address.
-
----
-
-## Step 5 — Update the Frontend
-
-Update:
-
-```text
-context/Constants.tsx
-```
-
-with the newly deployed Sepolia contract address:
-
-```ts
-export const votingAddress = "0xYOUR_CONTRACT_ADDRESS";
-```
-
-Then update the read provider in:
-
-```text
-context/Voter.tsx
-```
-
-to:
-
-```ts
-const provider = new ethers.JsonRpcProvider(
-  process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL
-);
-```
-
-Restart the Next.js development server after changing `.env.local`.
-
----
-
-## Step 6 — Set the Deployment Block
-
-The results page reads blockchain events.
-
-For Sepolia, set the contract deployment block in:
-
-```text
-app/results/page.tsx
-```
-
-using the block number containing the contract creation transaction.
-
-This prevents the application from unnecessarily scanning the entire Sepolia blockchain.
-
----
-
-## Step 7 — Start the Frontend
-
-```bash
-npx next dev --webpack --port 3005
-```
-
-Open:
-
-```text
-http://localhost:3005
-```
-
----
-
-## Step 8 — Configure MetaMask for Sepolia
-
-Switch MetaMask to:
-
-```text
-Sepolia
-```
-
-Make sure the active account is the wallet that deployed the contract.
-
-The deployer is the organizer and therefore has the permissions required for administrative operations.
-
-Then connect the wallet to the application.
-
----
-
-# 🔎 Contract Verification
-
-Contract verification is optional but recommended for public demos.
-
-Verification publishes the Solidity source code on Etherscan and makes the contract easier to inspect.
-
-## Etherscan API Key
-
-Create an API key:
-
-https://etherscan.io/myapikey
-
-Add it to `.env.local`:
-
-```env
-ETHERSCAN_API_KEY=<your_etherscan_api_key>
-```
-
-Your `hardhat.config.ts` should contain:
-
-```ts
-const config: HardhatUserConfig = {
-  solidity: "0.8.28",
-
-  networks: {
-    hardhat: {
-      chainId: 31337,
-    },
-
-    localhost: {
-      url: "http://127.0.0.1:8545",
-      chainId: 31337,
-    },
-
-    sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "",
-      accounts: process.env.DEPLOYER_PRIVATE_KEY
-        ? [process.env.DEPLOYER_PRIVATE_KEY]
-        : [],
-    },
-  },
-
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY || "",
-  },
-};
-
-export default config;
-```
-
-Then verify:
-
-```bash
-npx hardhat verify --network sepolia <YOUR_CONTRACT_ADDRESS>
-```
-
-The contract in this project has no constructor arguments, so no additional arguments are required.
-
-After verification, Etherscan will display the verified Solidity source and Read/Write Contract interfaces.
-
----
-
-# 🔁 Switching Between Local and Sepolia
+## 🔁 Local vs Sepolia
 
 | Configuration    | Local                    | Sepolia                    |
-| ---------------- | ------------------------ | -------------------------- |
-| Hardhat node     | ✅ Required               | ❌ Not required             |
-| Chain ID         | `31337`                  | `11155111`                 |
-| Deployment       | `--network localhost`    | `--network sepolia`        |
-| Contract address | Local deployment address | Sepolia deployment address |
-| Read provider    | `127.0.0.1:8545`         | Alchemy Sepolia RPC        |
-| MetaMask         | Hardhat Local            | Sepolia                    |
-| Wallet           | Hardhat test account     | Dedicated Sepolia wallet   |
-| ETH              | Fake ETH                 | Sepolia test ETH           |
-
-> **Important:** Whenever you deploy a new contract, update the contract address in `context/Constants.tsx`.
+| ----------------- | ------------------------- | --------------------------- |
+| Hardhat node      | ✅ Required                | ❌ Not required              |
+| Chain ID          | `31337`                   | `11155111`                  |
+| Deploy command    | `--network localhost`     | `--network sepolia`         |
+| Read provider     | `127.0.0.1:8545`          | Alchemy Sepolia RPC         |
+| Wallet            | Hardhat test account      | Dedicated Sepolia wallet    |
+| ETH               | Fake                      | Sepolia test ETH            |
 
 ---
 
-# 🗳️ Typical Usage Flow
+## 🗳️ Typical Usage Flow
 
-1. Connect the organizer wallet.
-2. Open the **Admin** page.
-3. Configure the voting period if necessary.
-4. Register candidates.
-5. Register authorized voters.
-6. Switch MetaMask to a registered voter account.
-7. Open the candidate list.
-8. Cast a vote.
-9. Open the Results page.
-10. View the winner, tie status, and voting events.
+Connect organizer wallet → **Admin** page → set voting period if needed → register candidates → register voters → switch MetaMask to a voter account → **Candidates** page → cast vote → **Results** page → winner / tie / event log.
+
+### ⚡ About Round 2
+
+The contract can't execute itself — after the voting period ends, the frontend checks whether Round 2 is needed (tie, or zero votes) and calls `triggerRound2IfNeeded()` as a normal user transaction. This only fires while someone has the app open; for fully autonomous triggering with nobody online, you'd need an off-chain automation service (e.g. Chainlink Automation).
 
 ---
 
-# ⚡ Round 2
-
-The smart contract cannot execute transactions by itself.
-
-The application therefore uses a frontend-triggered mechanism for Round 2.
-
-After the voting period ends:
-
-1. The frontend checks whether Round 2 is required.
-2. If a tie exists or no votes were cast, it calls:
-
-   ```solidity
-   triggerRound2IfNeeded()
-   ```
-3. The contract verifies that:
-
-   * The voting period has ended.
-   * Round 2 has not already been triggered.
-   * The election requires another round.
-4. The contract starts Round 2 and resets active candidates' vote counts.
-
-The frontend periodically checks for this condition while the application is open.
-
-> **Important:** This is not fully autonomous blockchain automation. A transaction must be submitted by a user or an external service.
-
-For truly automatic execution when nobody has the application open, an off-chain automation service such as Chainlink Automation would be required.
-
----
-
-# 🗂️ Project Structure
+## 🗂️ Project Structure
 
 ```text
 voting_app/
 ├── app/
-│   ├── admin/
-│   ├── allowed-voters/
-│   ├── candidate-list/
-│   ├── candidate-registration/
-│   ├── results/
-│   ├── voter-list/
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-│
-├── components/
-│   ├── Button/
-│   ├── Card/
-│   ├── Footer/
-│   ├── Input/
-│   ├── Navbar/
-│   ├── StatusBanner.tsx
-│   └── VoterCard/
-│
-├── context/
-│   ├── Constants.tsx
-│   └── Voter.tsx
-│
-├── contracts/
-│   └── voting_contracts.sol
-│
-├── public/
-│   └── images
-│
-├── scripts/
-│   └── deploy.js
-│
-├── .env.example
-├── .gitignore
-├── hardhat.config.ts
-├── next.config.ts
-├── package.json
-├── package-lock.json
-├── README.md
-├── tsconfig.json
-└── tsconfig.next.json
+│   ├── admin/ · allowed-voters/ · candidate-list/ · candidate-registration/
+│   ├── results/ · voter-list/
+│   ├── api/upload/route.ts   # Pinata proxy (holds PINATA_JWT server-side)
+│   ├── api/logs/route.ts     # Etherscan proxy (holds ETHERSCAN_API_KEY server-side)
+│   └── layout.tsx · page.tsx
+├── components/         # Navbar, Card, StatusBanner, etc.
+├── context/             # Constants.tsx (contract address/ABI), Voter.tsx (provider)
+├── contracts/           # voting_contracts.sol
+├── scripts/deploy.js
+├── .env.example · hardhat.config.ts · next.config.ts · package.json
 ```
-
-> `.env.local`, `node_modules`, `.next`, `artifacts`, and `cache` are intentionally excluded from the repository.
+`.env.local`, `node_modules`, `.next`, `artifacts`, `cache` are gitignored.
 
 ---
 
-# 🧰 Useful Commands
+## 🧰 Useful Commands
 
-| Command                                                 | Purpose                        |
-| ------------------------------------------------------- | ------------------------------ |
-| `npm install`                                           | Install dependencies           |
-| `npx hardhat compile`                                   | Compile the smart contract     |
-| `npx hardhat node`                                      | Start the local blockchain     |
-| `npx hardhat run scripts/deploy.js --network localhost` | Deploy locally                 |
-| `npx hardhat run scripts/deploy.js --network sepolia`   | Deploy to Sepolia              |
-| `npx hardhat verify --network sepolia <address>`        | Verify the contract            |
-| `npx hardhat clean`                                     | Remove Hardhat generated files |
-| `npx next dev --webpack --port 3005`                    | Start the frontend             |
-| `npm run build`                                         | Create a production build      |
-
----
-
-# 🩺 Troubleshooting
-
-| Problem                                    | Possible Cause                        | Solution                                             |
-| ------------------------------------------ | ------------------------------------- | ---------------------------------------------------- |
-| `Cannot find module ... VotingSystem.json` | Contract has not been compiled        | Run `npx hardhat compile`                            |
-| `Failed to fetch`                          | Wrong or unavailable RPC              | Check the provider configuration                     |
-| `No signer found`                          | Missing or incorrect private key      | Check `DEPLOYER_PRIVATE_KEY`                         |
-| `insufficient funds`                       | Sepolia wallet has no test ETH        | Get Sepolia ETH from a faucet                        |
-| Admin actions fail                         | Wrong MetaMask account                | Connect the deploying/organizer account              |
-| MetaMask shows `Nonce too high` locally    | Hardhat node was restarted            | Reset the MetaMask account                           |
-| `fs / net / tls is not defined`            | Next.js started with Turbopack        | Use `npx next dev --webpack --port 3005`             |
-| `window.ethereum is undefined`             | MetaMask unavailable or incorrect URL | Use MetaMask and open `http://localhost:3005`        |
-| Images fail with `401 Unauthorized`        | Invalid or expired Pinata JWT         | Regenerate the JWT and restart Next.js               |
-| Results fail with RPC errors               | Too many blockchain queries           | Set the deployment block and use a suitable RPC      |
-| Etherscan shows raw selectors              | Contract is not verified              | Run `npx hardhat verify --network sepolia <address>` |
-| Port `3000` unavailable                    | Windows/Hyper-V port reservation      | Use `--port 3005`                                    |
+| Command | Purpose |
+| --- | --- |
+| `npm install` | Install dependencies |
+| `npx hardhat compile` | Compile the contract |
+| `npx hardhat node` | Start local chain |
+| `npx hardhat run scripts/deploy.js --network localhost\|sepolia` | Deploy |
+| `npx hardhat verify --network sepolia <address>` | Verify on Etherscan |
+| `npx hardhat clean` | Remove Hardhat build artifacts |
+| `npx next dev --webpack --port 3005` | Start frontend (dev) |
+| `npm run build` | Production build |
 
 ---
 
-# 🚀 Quick Start
+## 🩺 Troubleshooting
 
-## Local Development
-
-```bash
-npm install
-
-# Terminal 1
-npx hardhat compile
-npx hardhat node
-
-# Terminal 2
-npx hardhat run scripts/deploy.js --network localhost
-
-# Terminal 3
-npx next dev --webpack --port 3005
-```
-
-Open:
-
-```text
-http://localhost:3005
-```
-
-Configure MetaMask for:
-
-```text
-Hardhat Local
-Chain ID: 31337
-RPC: http://127.0.0.1:8545
-```
+| Problem | Cause | Fix |
+| --- | --- | --- |
+| `Cannot find module ... VotingSystem.json` | Not compiled | `npx hardhat compile` |
+| `Failed to fetch` | Bad/unavailable RPC | Check provider config |
+| `No signer found` | Missing/bad private key | Check `DEPLOYER_PRIVATE_KEY` |
+| `insufficient funds` | No Sepolia ETH | Use a faucet |
+| Admin actions fail | Wrong MetaMask account | Connect the organizer/deployer account |
+| `Nonce too high` locally | Hardhat node restarted | Reset MetaMask account |
+| `fs / net / tls is not defined` | Started with Turbopack | Use `--webpack` |
+| `window.ethereum is undefined` | No MetaMask / wrong URL | Install MetaMask, use `localhost:3005` |
+| Uploads fail / 500 on `/api/upload` | Missing `PINATA_JWT` server env var | Set it in `.env.local` (and host env vars if deployed) |
+| Results fail / 500 on `/api/logs` | Missing `ETHERSCAN_API_KEY` server env var | Same as above |
+| Etherscan shows raw selectors | Contract not verified | `npx hardhat verify ...` |
+| Port `3000` unavailable | Windows/Hyper-V reservation | Use `--port 3005` |
 
 ---
 
-## Sepolia
+## 🔒 Security Notice
 
-Configure `.env.local` with your own credentials:
+Development/educational project.
 
-```env
-NEXT_PUBLIC_PINATA_JWT=<your_pinata_jwt>
-SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-DEPLOYER_PRIVATE_KEY=0x<your_private_key>
-ETHERSCAN_API_KEY=<your_etherscan_api_key>
-NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-NEXT_PUBLIC_RPC_WSS_URL=wss://eth-sepolia.g.alchemy.com/v2/<YOUR_ALCHEMY_KEY>
-```
-
-Then:
-
-```bash
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network sepolia
-```
-
-Copy the deployed contract address into:
-
-```text
-context/Constants.tsx
-```
-
-Configure the frontend to use the Sepolia provider, then:
-
-```bash
-npx next dev --webpack --port 3005
-```
-
-Open:
-
-```text
-http://localhost:3005
-```
-
-Optional contract verification:
-
-```bash
-npx hardhat verify --network sepolia <YOUR_CONTRACT_ADDRESS>
-```
-
-View the contract on:
-
-```text
-https://sepolia.etherscan.io/address/<YOUR_CONTRACT_ADDRESS>
-```
-
----
-
-# 🔒 Security Notice
-
-This project is intended for **development and educational purposes**.
-
-Do not use the default Hardhat private keys on public networks.
-
-Never commit:
-
-```text
-.env.local
-```
-
-Never expose:
-
-```text
-DEPLOYER_PRIVATE_KEY
-```
-
-or any other private credential.
-
-Always use a dedicated testnet wallet for Sepolia development.
+* Never use Hardhat's default private keys on a public network.
+* Never commit `.env.local`.
+* Never expose `DEPLOYER_PRIVATE_KEY`, `PINATA_JWT`, or `ETHERSCAN_API_KEY` — these are server-side only, on purpose.
+* Use a dedicated, fund-free testnet wallet for Sepolia dev.
