@@ -172,32 +172,3 @@ voting_app/
 | `npx next dev --webpack --port 3005` | Start frontend (dev) |
 | `npm run build` | Production build |
 
----
-
-## 🩺 Troubleshooting
-
-| Problem | Cause | Fix |
-| --- | --- | --- |
-| `Cannot find module ... VotingSystem.json` | Not compiled | `npx hardhat compile` |
-| `Failed to fetch` | Bad/unavailable RPC | Check provider config |
-| `No signer found` | Missing/bad private key | Check `DEPLOYER_PRIVATE_KEY` |
-| `insufficient funds` | No Sepolia ETH | Use a faucet |
-| Admin actions fail | Wrong MetaMask account | Connect the organizer/deployer account |
-| `Nonce too high` locally | Hardhat node restarted | Reset MetaMask account |
-| `fs / net / tls is not defined` | Started with Turbopack | Use `--webpack` |
-| `window.ethereum is undefined` | No MetaMask / wrong URL | Install MetaMask, use `localhost:3005` |
-| Uploads fail / 500 on `/api/upload` | Missing `PINATA_JWT` server env var | Set it in `.env.local` (and host env vars if deployed) |
-| Results fail / 500 on `/api/logs` | Missing `ETHERSCAN_API_KEY` server env var | Same as above |
-| Etherscan shows raw selectors | Contract not verified | `npx hardhat verify ...` |
-| Port `3000` unavailable | Windows/Hyper-V reservation | Use `--port 3005` |
-
----
-
-## 🔒 Security Notice
-
-Development/educational project.
-
-* Never use Hardhat's default private keys on a public network.
-* Never commit `.env.local`.
-* Never expose `DEPLOYER_PRIVATE_KEY`, `PINATA_JWT`, or `ETHERSCAN_API_KEY` — these are server-side only, on purpose.
-* Use a dedicated, fund-free testnet wallet for Sepolia dev.
