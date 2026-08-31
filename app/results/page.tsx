@@ -8,9 +8,7 @@ import { votingAddress, votingAddressABI } from '../../context/Constants';
 const DEPLOY_BLOCK = 	10983130;
 
 // Etherscan V2 — no 10-block cap, returns blockNumber + timeStamp + txHash per log.
-const ETHERSCAN_BASE = 'https://api.etherscan.io/v2/api';
 const CHAIN_ID = 11155111; // Sepolia
-const ETHERSCAN_KEY = process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || '';
 const ETHERSCAN_TX = (hash: string) => `https://sepolia.etherscan.io/tx/${hash}`;
 const ETHERSCAN_ADDR = (addr: string) => `https://sepolia.etherscan.io/address/${addr}`;
 
@@ -77,9 +75,9 @@ const ResultsPage = () => {
     try {
       const iface = new ethers.Interface(votingAddressABI);
 
-      // One call to Etherscan returns ALL of the contract's logs (no 10-block cap).
-      const url = `${ETHERSCAN_BASE}?chainid=${CHAIN_ID}&module=logs&action=getLogs`
-        + `&address=${votingAddress}&fromBlock=${DEPLOY_BLOCK}&toBlock=latest&apikey=${ETHERSCAN_KEY}`;
+      // One call to our server proxy returns ALL of the contract's logs (no 10-block cap).
+      const url = `/api/logs?chainid=${CHAIN_ID}`
+        + `&address=${votingAddress}&fromBlock=${DEPLOY_BLOCK}&toBlock=latest`;
       const res = await fetch(url);
       if (!res.ok) { setNetError(`⚠️ Server error (${res.status}). Retrying…`); setLoading(false); return; }
       const json = await res.json();
